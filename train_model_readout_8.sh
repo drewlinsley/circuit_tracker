@@ -1,0 +1,2 @@
+CUDA_VISIBLE_DEVICES=3 python ltr/run_training.py transt_readout transt_circuit_readout_8
+
