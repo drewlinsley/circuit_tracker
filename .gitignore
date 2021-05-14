@@ -1,0 +1,4 @@
+pytracking/networks
+__pycache__
+*.swp
+*.pyc
