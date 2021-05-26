@@ -18,7 +18,7 @@ class EnvSettings:
         self.got10k_path = ''
         # self.lasot_path = '/media/data/tracking/lasot_extended/LaSOT_extension_subset'
         self.lasot_path = '/dev/tracking/lasot/LaSOTBenchmark'
-        self.trackingnet_path = ''
+        self.trackingnet_path = '../datasets/TrackingNetTest'  # '/home/dlinsley/tracking/trackingnet/TrackingNet'
         self.davis_dir = ''
         self.youtubevos_dir = ''
 

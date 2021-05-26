@@ -90,7 +90,7 @@ class TransT(SiameseTracker):
                                     round(s_x), self.channel_average)
         x_crop = x_crop.float().mul(1.0 / 255.0).clamp(0.0, 1.0)
         if noise:
-            x_crop = apply_noise(x_crop, noise, noise_mag)
+            x_crop = apply_noise(x_crop, noise, noise_mag, frame_num=self.frame_num)
 
         x_crop[0] = tvisf.normalize(x_crop[0], self.mean, self.std, self.inplace)
 

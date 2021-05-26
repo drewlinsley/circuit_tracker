@@ -29,6 +29,8 @@ class TransT(nn.Module):
         hidden_dim = featurefusion_network.d_model
         self.new_class_embed = MLP(hidden_dim, hidden_dim, num_classes + 1, 3)
         self.new_bbox_embed = MLP(hidden_dim, hidden_dim, 4, 3)
+        self.height = 32
+        self.hidden_dim = hidden_dim
         self.input_proj = nn.Conv2d(backbone.num_channels, hidden_dim, kernel_size=1)
         self.backbone = backbone
 
@@ -79,7 +81,14 @@ class TransT(nn.Module):
         outputs_class = self.new_class_embed(hs)
         outputs_coord = self.new_bbox_embed(hs).sigmoid()
         out = {'pred_logits': outputs_class[-1], 'pred_boxes': outputs_coord[-1]}
-        return out
+        return_activities = info.get("return_activities", False)
+        if return_activities:
+            activities = {
+                "transformer": -hs.squeeze().view(1, self.height, self.height, self.hidden_dim).permute(0, 3, 1, 2).squeeze().mean(0).detach().cpu(),
+            }
+            return out, activities
+        else:
+            return out        
 
     def template(self, z, **kwargs):
         if not isinstance(z, NestedTensor):

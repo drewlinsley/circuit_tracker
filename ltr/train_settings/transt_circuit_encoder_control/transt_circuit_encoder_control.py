@@ -97,10 +97,10 @@ def run(settings):
 
     # The sampler for training
     # dataset_train = sampler.TransTSampler([got10k_train], [1], samples_per_epoch=1000*settings.batch_size, max_gap=100, processing=data_processing_train, num_search_frames=settings.sequence_length, frame_sample_mode="rnn_interval")
-    dataset_train = sampler.TransTSampler([lasot_train, got10k_train, trackingnet_train], [1, 1, 1], samples_per_epoch=1000*settings.batch_size, max_gap=settings.sequence_length * settings.frame_multiplier, processing=data_processing_train, num_search_frames=settings.sequence_length, frame_sample_mode="interval_sorted")
+    dataset_train = sampler.TransTSampler([lasot_train, got10k_train, trackingnet_train], [1, 1, 1], samples_per_epoch=1000*settings.batch_size, max_gap=settings.sequence_length * settings.frame_multiplier, processing=data_processing_train, num_search_frames=settings.sequence_length, frame_sample_mode="interval")
     # dataset_train = sampler.TransTSampler([lasot_train, got10k_train, trackingnet_train], [1, 1, 1], samples_per_epoch=1000*settings.batch_size, max_gap=100, processing=data_processing_train, num_search_frames=settings.sequence_length, frame_sample_mode="interval")
 
-    dataset_train = sampler.TransTSampler([got10k_train], [1], samples_per_epoch=1000*settings.batch_size, max_gap=100, processing=data_processing_train)
+    # dataset_train = sampler.TransTSampler([lasot_train, got10k_train, trackingnet_train], [1,1,1], samples_per_epoch=1000*settings.batch_size, max_gap=100, processing=data_processing_train)
 
     # The loader for training
     loader_train = LTRLoader('train', dataset_train, training=True, batch_size=settings.batch_size, num_workers=settings.num_workers,
@@ -141,8 +141,7 @@ def run(settings):
     print("*" * 60)
     for n, p in model.named_parameters():
         # See note above about LRs
-        if "circuit" in n or "rnn" in n or "trans_" in n:
-        # if "circuit" in n or "rnn" in n or "trans" in n or "class_embed" in n or "bbox_embed" in n or "encoder" in n:
+        if "circuit" in n or "rnn" in n or "trans" in n or "class_embed" in n or "bbox_embed" in n or "encoder" in n:
             print("TRAINING {}".format(n))
         else:
             p.requires_grad = False

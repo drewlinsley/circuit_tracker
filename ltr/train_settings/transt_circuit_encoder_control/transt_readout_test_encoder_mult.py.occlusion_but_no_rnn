@@ -1,7 +1,7 @@
 import torch
 from ltr.dataset import Lasot, MSCOCOSeq, Got10k, TrackingNet
 from ltr.data import processing, sampler, LTRLoader
-import ltr.models.tracking.transt_circuit_encoder_q as transt_models
+import ltr.models.tracking.transt_circuit_encoder_test_mult as transt_models
 # import ltr.models.tracking.transt_control as transt_models
 
 from ltr import actors
@@ -14,13 +14,13 @@ def run(settings):
     # Most common settings are assigned in the settings struct
     debug = False
     if debug:
-        settings.batch_size = 2  # 8  # 4  # 120  # 70 # 38
+        settings.batch_size = 4  # 8  # 4  # 120  # 70 # 38
         settings.num_workers = 0  # 24  # 30  # 10  # 35  # 30 min(settings.batch_size, 16)
         settings.multi_gpu = False  # True  # True  # True #  True  # True  # True  # True
 
     else:
-        settings.batch_size = 24  # 8  # 4  # 120  # 70 # 38
-        settings.num_workers = 24  # 24  # 30  # 10  # 35  # 30 min(settings.batch_size, 16)
+        settings.batch_size = 38  # 8  # 4  # 120  # 70 # 38
+        settings.num_workers = 18  # 24  # 30  # 10  # 35  # 30 min(settings.batch_size, 16)
         settings.multi_gpu = True  # True  # True  # True #  True  # True  # True  # True
 
     settings.device = 'cuda'
@@ -36,11 +36,10 @@ def run(settings):
     settings.temp_sz = settings.template_feature_sz * 8
     settings.center_jitter_factor = {'search': 3.0, 'template': 0}  # 3
     settings.scale_jitter_factor = {'search': 0.25, 'template': 0}  # 0.25
-
-    settings.sequence_length = 8  # 20  # 64 NEXT  # Same as PT
+    settings.sequence_length = 20  # 64 NEXT  # Same as PT
     settings.rand = True  # If True Linear interpolate across 2 center/scale jitters. If False each frame is jittered.
-    settings.occlusion = False
-    settings.frame_multiplier = 6
+    settings.occlusion = True
+    settings.frame_multiplier = 1
     # settings.search_gap = 1  # Depreciated
     settings.pin_memory = False
     settings.init_ckpt = "pytracking/networks/transt.pth"
@@ -97,10 +96,10 @@ def run(settings):
 
     # The sampler for training
     # dataset_train = sampler.TransTSampler([got10k_train], [1], samples_per_epoch=1000*settings.batch_size, max_gap=100, processing=data_processing_train, num_search_frames=settings.sequence_length, frame_sample_mode="rnn_interval")
-    dataset_train = sampler.TransTSampler([lasot_train, got10k_train, trackingnet_train], [1, 1, 1], samples_per_epoch=1000*settings.batch_size, max_gap=settings.sequence_length * settings.frame_multiplier, processing=data_processing_train, num_search_frames=settings.sequence_length, frame_sample_mode="interval_sorted")
+    dataset_train = sampler.TransTSampler([lasot_train, got10k_train, trackingnet_train], [1, 1, 1], samples_per_epoch=1000*settings.batch_size, max_gap=settings.sequence_length * settings.frame_multiplier, processing=data_processing_train, num_search_frames=settings.sequence_length, frame_sample_mode="rnn_interval")
     # dataset_train = sampler.TransTSampler([lasot_train, got10k_train, trackingnet_train], [1, 1, 1], samples_per_epoch=1000*settings.batch_size, max_gap=100, processing=data_processing_train, num_search_frames=settings.sequence_length, frame_sample_mode="interval")
 
-    dataset_train = sampler.TransTSampler([got10k_train], [1], samples_per_epoch=1000*settings.batch_size, max_gap=100, processing=data_processing_train)
+    # dataset_train = sampler.TransTSampler([lasot_train, got10k_train, trackingnet_train], [1,1,1], samples_per_epoch=1000*settings.batch_size, max_gap=100, processing=data_processing_train)
 
     # The loader for training
     loader_train = LTRLoader('train', dataset_train, training=True, batch_size=settings.batch_size, num_workers=settings.num_workers,
@@ -117,8 +116,8 @@ def run(settings):
     n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print('number of params:', n_parameters)
 
-    actor = actors.OldCircuitTranstActor(net=model, objective=objective)
-    # actor = actors.CircuitTranstActor(net=model, objective=objective)
+    # actor = actors.OldCircuitTranstActor(net=model, objective=objective)
+    actor = actors.CircuitTranstActor(net=model, objective=objective)
 
     # Optimizer
     # Change learning rate forthe Q we have changed and the RNN and the readout
@@ -127,22 +126,19 @@ def run(settings):
     #         self.bbox_embed_new = MLP(hidden_dim * 2, hidden_dim, 4, 3)
     param_dicts = [
         {
-            "params": [p for n, p in model.named_parameters() if "circuit" in n or "rnn" in n or "trans_" in n],  # PREVIOUSLY THIS WAS "trans"
-            "lr": 1e-4
+            "params": [p for n, p in model.named_parameters() if "circuit" in n or "rnn" in n or "trans" in n],
+            "lr": 1e-10  # 1e-4
         },
-        # This was enabled for the paper. Disabling as a test.
         {
-            "params": [p for n, p in model.named_parameters() if  "class_embed" in n or "bbox_embed" in n or "encoder" in n],
-            "lr": 1e-6
+            "params": [p for n, p in model.named_parameters() if "decoder" in n or "class_embed" in n or "bbox_embed" in n],
+            "lr": 1e-10  # 1e-5
         },
     ]
     print("Higher lr:")
-    print([n for n, p in model.named_parameters() if "circuit" in n or "rnn" in n or "trans_" in n])  # if "encoder" not in n and "input_proj" not in n and "decoder" not in n and "backbone" not in n and "embed" not in n])
+    print([n for n, p in model.named_parameters() if "circuit" in n or "rnn" in n or "trans" in n])  # if "encoder" not in n and "input_proj" not in n and "decoder" not in n and "backbone" not in n and "embed" not in n])
     print("*" * 60)
     for n, p in model.named_parameters():
-        # See note above about LRs
-        if "circuit" in n or "rnn" in n or "trans_" in n:
-        # if "circuit" in n or "rnn" in n or "trans" in n or "class_embed" in n or "bbox_embed" in n or "encoder" in n:
+        if "circuit" in n or "rnn" in n or "trans" in n or "decoder" in n or "class_embed" in n or "bbox_embed" in n:
             print("TRAINING {}".format(n))
         else:
             p.requires_grad = False

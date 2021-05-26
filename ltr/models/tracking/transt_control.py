@@ -36,6 +36,8 @@ class TransT(nn.Module):
         # self.circuit = circuit
         self.rnn_dims = rnn_dims
         hidden_dim = featurefusion_network.d_model
+        self.height = 32
+        self.hidden_dim = hidden_dim
         # self.class_embed = MLP(hidden_dim, hidden_dim, num_classes + 1, 3)
         # self.bbox_embed = MLP(hidden_dim, hidden_dim, 4, 3)
         # self.exc_bbox = MLP(hidden_dim, hidden_dim, 4, 3)
@@ -137,7 +139,7 @@ class TransT(nn.Module):
         self.inh = None
         # print("Reset hidden states.")
 
-    def track(self, search, bumps, info):
+    def track(self, search, bumps=None, info=None):
         if 0:
             from matplotlib import pyplot as plt
             f = plt.figure()
@@ -157,7 +159,14 @@ class TransT(nn.Module):
         outputs_class = self.class_embed(hs)
         outputs_coord = self.bbox_embed(hs).sigmoid()
         out = {'pred_logits': outputs_class[-1], 'pred_boxes': outputs_coord[-1]}
-        return out
+        return_activities = info.get("return_activities", False)
+        if return_activities:
+            activities = {
+                "transformer": -hs.squeeze().view(1, self.height, self.height, self.hidden_dim).permute(0, 3, 1, 2).squeeze().mean(0).detach().cpu(),
+            }
+            return out, activities
+        else:
+            return out
 
     def template(self, z):
         if not isinstance(z, NestedTensor):

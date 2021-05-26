@@ -172,6 +172,7 @@ class TransT(nn.Module):
 
             # Step 3, TD-FB incorporating hs to make better modulations of q in the future
             pre_res_hs = qs.squeeze().view(search_shape[0], self.height, self.height, self.hidden_dim).permute(0, 3, 1, 2)
+            # pre_res_hs = qs.squeeze().view(search_shape[0], self.height, self.height, self.hidden_dim).permute(0, 3, 1, 2)  # .contiguous()
 
             # TD from Trans to Circuit
             res_hs = self.cnl(self.circuit_tf_codeswitch(pre_res_hs))
@@ -179,11 +180,17 @@ class TransT(nn.Module):
             if t == 0:
                 td_inh_1 = self.cnl(self.circuit_td_inh_1_init(res_hs))
             exc_1, td_inh_1 = self.circuit_td_1(pre_exc_1, excitation=res_hs, inhibition=td_inh_1, activ=self.cnl)
-            # from matplotlib import pyplot as plt
-            # plt.subplot(141);plt.imshow(search[0, t].squeeze().permute(1, 2, 0).cpu());plt.subplot(142);
-            # plt.imshow((self.input_proj(src_search[:, t])[0].squeeze() ** 2).mean(0).detach().cpu());
-            # plt.subplot(143);plt.imshow((prev_hs.sigmoid().squeeze() ** 2)[0].mean(0).detach().cpu());
-            # plt.subplot(144);plt.imshow(((self.input_proj(src_search[:, t]) * prev_hs.sigmoid())[0].squeeze() ** 2).mean(0).detach().cpu());plt.show()
+
+
+            # if t > 0:
+            #     from matplotlib import pyplot as plt
+            #     plt.subplot(151);plt.imshow(search[0, t].squeeze().permute(1, 2, 0).cpu());
+            #     plt.subplot(152);plt.imshow((src_search[0, t].squeeze()).mean(0).detach().cpu());
+            #     plt.subplot(153);plt.title("Circuit-Transformer agreement", fontsize=6);plt.imshow((rnn_gate[0]).squeeze().detach().cpu().mean(0))
+            #     plt.subplot(154);plt.imshow(-(((prev_hs[0])).squeeze().mean(0).detach().cpu()));plt.title("Circuit Modulation", fontsize=6);
+            #     plt.subplot(155);plt.title("Transformer", fontsize=6);plt.imshow((-hs[0, 0].squeeze().view(1, self.height, self.height, self.hidden_dim).permute(0, 3, 1, 2)).squeeze().mean(0).detach().cpu());  # plt.show()
+            #     plt.show()
+
             # if t > src_search.shape[1] - 5:
             #     plt.subplot(141);plt.title("Resnet");plt.imshow(search[0, t].squeeze().permute(1, 2, 0).cpu());plt.title("L1");plt.subplot(142);plt.imshow((pre_exc_1[0] ** 2).squeeze().mean(0).detach().cpu());plt.subplot(143);plt.title("L2");plt.imshow((exc_2[0] ** 2).squeeze().mean(0).detach().cpu());plt.subplot(144);plt.title("L1 after TD");plt.imshow((exc_1[0] ** 2).squeeze().mean(0).detach().cpu());
             #     plt.show()
@@ -271,10 +278,11 @@ class TransT(nn.Module):
         hs, qs = self.featurefusion_network(src_template, mask_template, src_input, mask_search, pos_template[0], pos_search[0], exc=prev_hs)
 
         # Step 3, TD-FB incorporating hs
-        res_hs = qs.squeeze().view(1, self.height, self.height, self.hidden_dim).permute(0, 3, 1, 2)
+        pre_res_hs = qs.squeeze().view(1, self.height, self.height, self.hidden_dim).permute(0, 3, 1, 2)  # .contiguous()
 
         # TD from Trans to Circuit
-        res_hs = self.cnl(self.circuit_tf_codeswitch(res_hs))
+        # res_hs = self.cnl(self.circuit_tf_codeswitch(pre_res_hs))  # .contiguous())  # SUPER WEIRD but at traing time this op turns preres contiguous, but not at test time
+        res_hs = self.cnl(self.circuit_tf_codeswitch(pre_res_hs)).contiguous()  # SUPER WEIRD but at traing time this op turns preres contiguous, but not at test time
         ##### This pooling is for technical reasons. Ideally dont have to do this but whatever...
         if 0:  # td_inh_1 is not None:
             from matplotlib import pyplot as plt
@@ -308,35 +316,15 @@ class TransT(nn.Module):
         outputs_coord = self.bbox_embed(hs).sigmoid()
         out = {'pred_logits': outputs_class[-1], 'pred_boxes': outputs_coord[-1]}
 
-        # from matplotlib import pyplot as plt
-        # fig = plt.figure()
-        # timer = fig.canvas.new_timer(interval = 1500) #creating a timer object and setting an interval of 3000 milliseconds
-        # timer.add_callback(close_event)
-
-        # timer.start()
-        if 0:
-            im = 0
-            ti = 0
-            ims = ims.squeeze().permute(1, 2, 0).cpu()
-            ims = (ims - ims.min()) / (ims.max() - ims.min())
-            f = plt.figure()
-            plt.subplot(151)
-            plt.title("Init label")
-            plt.imshow(bumps.squeeze().cpu())
-            plt.subplot(152)
-            plt.imshow(-(hs.squeeze() ** 2).mean(-1).reshape(32, 32).detach().cpu())
-            plt.title("transformer")
-            plt.axis("off")
-            plt.subplot(153);
-            plt.imshow((src_search.squeeze() ** 2).mean(0).detach().cpu())
-            plt.axis("off")
-            plt.title("Pred salience")
-            plt.subplot(154);plt.imshow((proc_rnn.sigmoid()).squeeze().mean(0).detach().cpu(), vmax=1);plt.title("circuit");plt.axis("off");plt.subplot(155);plt.imshow(ims);plt.axis("off");plt.savefig("gifs/{}_{}.png".format(info['seq_name'], self.count))
-            plt.show()
-            plt.close(f)
-            self.count +=1 
-
-        return out
+        return_activities = info.get("return_activities", False)
+        if return_activities:
+            activities = {
+                "transformer": -hs.squeeze().view(1, self.height, self.height, self.hidden_dim).permute(0, 3, 1, 2).squeeze().mean(0).detach().cpu(),
+                "circuit": -prev_hs.squeeze().mean(0).detach().cpu()
+            }
+            return out, activities
+        else:
+            return out
 
     def template(self, z):
         if not isinstance(z, NestedTensor):
@@ -345,8 +333,6 @@ class TransT(nn.Module):
         self.zf = zf
         self.pos_template = pos_template
 
-def close_event():
-    plt.close() #timer calls this function after 3 seconds and closes the window
 
 class SetCriterion(nn.Module):
     """ This class computes the loss for TransT.

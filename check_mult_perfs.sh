@@ -1,5 +1,5 @@
 
-i=113
+i=45
 GPU=0
 for ckpt in `ls -t checkpoints/ltr/transt_circuit_encoder/transt_circuit_encoder/*.tar`
 do
