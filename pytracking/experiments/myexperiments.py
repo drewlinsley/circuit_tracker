@@ -48,7 +48,7 @@ def transt_encoder():
 
 def transt_readout_test_encoder_mult():
     trackers = trackerlist('transt_readout_test_encoder_mult', 'default', range(1))
-    dataset = get_dataset('got10k_val', 'got10k_test')  # , 'got10k_val')  # , 'lasot')  # _val, 'got10k_ltrval')
+    dataset = get_dataset('got10k_val')  # , 'got10k_test')  # , 'got10k_val')  # , 'lasot')  # _val, 'got10k_ltrval')
     # dataset = get_dataset('got10k_test')  # _val, 'got10k_ltrval')
     return trackers, dataset
 
@@ -94,7 +94,8 @@ def transt_readout_test_encoder_mult_control():
     trackers = trackerlist('transt_circuit_control', 'default', range(1))
     # dataset = get_dataset('got10k_test', 'lasot')  # _val, 'got10k_ltrval')
     # dataset = get_dataset('lasot')  # _val, 'got10k_ltrval')
-    dataset = get_dataset('got10k_test')  # _val, 'got10k_ltrval')
+    # dataset = get_dataset('got10k_test')  # _val, 'got10k_ltrval')
+    dataset = get_dataset('got10k_val')
     return trackers, dataset
 
 def transt_readout_test_encoder_mult_control_tn():
