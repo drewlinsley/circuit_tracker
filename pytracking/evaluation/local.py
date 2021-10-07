@@ -5,6 +5,7 @@ def local_env_settings():
 
     # Set your local paths here.
 
+    settings.nfl_dir = '/media/data_cifs/projects/prj_tracking/nfl/'
     settings.davis_dir = ''
     settings.got10k_path = '/media/data_cifs/projects/prj_tracking/pytorch_hGRU/datasets/got10k/'
     settings.got_packed_results_path = '/media/data_cifs/projects/prj_tracking/pytorch_hGRU/TransT/got_results_packed'

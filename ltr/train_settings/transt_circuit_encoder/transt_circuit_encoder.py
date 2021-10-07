@@ -100,7 +100,7 @@ def run(settings):
     dataset_train = sampler.TransTSampler([lasot_train, got10k_train, trackingnet_train], [1, 1, 1], samples_per_epoch=1000*settings.batch_size, max_gap=settings.sequence_length * settings.frame_multiplier, processing=data_processing_train, num_search_frames=settings.sequence_length, frame_sample_mode="interval_sorted")
     # dataset_train = sampler.TransTSampler([lasot_train, got10k_train, trackingnet_train], [1, 1, 1], samples_per_epoch=1000*settings.batch_size, max_gap=100, processing=data_processing_train, num_search_frames=settings.sequence_length, frame_sample_mode="interval")
 
-    dataset_train = sampler.TransTSampler([got10k_train], [1], samples_per_epoch=1000*settings.batch_size, max_gap=100, processing=data_processing_train)
+    # dataset_train = sampler.TransTSampler([got10k_train], [1], samples_per_epoch=1000*settings.batch_size, max_gap=100, processing=data_processing_train)
 
     # The loader for training
     loader_train = LTRLoader('train', dataset_train, training=True, batch_size=settings.batch_size, num_workers=settings.num_workers,

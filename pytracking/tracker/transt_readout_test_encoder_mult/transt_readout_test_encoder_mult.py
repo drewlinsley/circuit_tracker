@@ -130,9 +130,10 @@ class TransT(SiameseTracker):
         # penalty = np.exp(-(r_c * s_c - 1) * cfg.TRACK.PENALTY_K)
         # pscore = penalty * score
 
-        # window penalty
+        # # window penalty
         pscore = score * (1 - cfg.TRACK.WINDOW_INFLUENCE) + \
                  self.window * cfg.TRACK.WINDOW_INFLUENCE
+        # pscore = score * (1 - 0.9) + self.window * 0.9
         # pscore = score
         best_idx = np.argmax(pscore)
 

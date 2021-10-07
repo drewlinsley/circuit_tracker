@@ -95,7 +95,7 @@ def transt_readout_test_encoder_mult_control():
     # dataset = get_dataset('got10k_test', 'lasot')  # _val, 'got10k_ltrval')
     # dataset = get_dataset('lasot')  # _val, 'got10k_ltrval')
     # dataset = get_dataset('got10k_test')  # _val, 'got10k_ltrval')
-    dataset = get_dataset('got10k_val')
+    dataset = get_dataset('got10k_test')
     return trackers, dataset
 
 def transt_readout_test_encoder_mult_control_tn():
